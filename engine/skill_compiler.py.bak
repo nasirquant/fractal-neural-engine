@@ -1,0 +1,123 @@
+"""Self-improving skill compiler for FNSE.
+
+Analyzes simulation failure trajectories, compiles successful workflows
+into isolated Python script files (skills), and loads them dynamically.
+"""
+
+from __future__ import annotations
+
+import ast
+import importlib.util
+import hashlib
+import json
+import sys
+import traceback
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from threading import RLock
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from uuid import uuid4
+
+from .state import SkillManifest, AgentState, SimulationTickPacket
+from config import settings
+
+
+@dataclass
+class CompilationResult:
+    """Result of a skill compilation attempt."""
+    success: bool
+    skill_id: Optional[str] = None
+    error: Optional[str] = None
+    warnings: List[str] = field(default_factory=list)
+    test_results: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class FailureTrajectory:
+    """Captures a failure trajectory for analysis."""
+    epoch_id: str
+    tick_number: int
+    agent_id: str
+    agent_role: str
+    error_type: str
+    error_message: str
+    stack_trace: str
+    agent_state_snapshot: Dict[str, Any]
+    context: Dict[str, Any]
+    timestamp: datetime = field(default_factory=datetime.utcnow)
+
+
+class SkillValidator:
+    """Validates compiled skills for safety and correctness."""
+    
+    def __init__(self):
+        self.allowed_imports = set(settings.allowed_imports)
+        self.blocked_keywords = set(settings.blocked_keywords)
+    
+    def validate_source(self, source_code: str) -> Tuple[bool, List[str]]:
+        """Validate source code for safety violations."""
+        errors = []
+        
+        # Check for blocked keywords
+        for keyword in self.blocked_keywords:
+            if keyword in source_code:
+                errors.append(f"Blocked keyword detected: {keyword}")
+        
+        # Parse AST for deeper analysis
+        try:
+            tree = ast.parse(source_code)
+        except SyntaxError as e:
+            return False, [f"Syntax error: {e}"]
+        
+        # Walk AST for imports and dangerous constructs
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    if isinstance(node, ast.ImportFrom):
+                        module = node.module or ""
+                        full_name = f"{module}.{alias.name}" if module else alias.name
+                    else:
+                        full_name = alias.name
+                    
+                    # Check if import is allowed
+                    base_module = full_name.split(".")[0]
+                    if base_module not in self.allowed_imports:
+                        errors.append(f"Disallowed import: {full_name}")
+            
+            # Check for dangerous function calls
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    if node.func.id in ("eval", "exec", "compile", "__import__"):
+                        errors.append(f"Dangerous function call: {node.func.id}")
+                elif isinstance(node.func, ast.Attribute):
+                    if node.func.attr in ("eval", "exec", "compile", "__import__"):
+                        errors.append(f"Dangerous method call: {node.func.attr}")
+        
+        return len(errors) == 0, errors
+    
+    def validate_signature(self, source_code: str, expected_signature: str) -> Tuple[bool, List[str]]:
+        """Validate that the skill has the expected entry point signature."""
+        errors = []
+        
+        try:
+            tree = ast.parse(source_code)
+        except SyntaxError:
+            return False, ["Cannot parse source for signature validation"]
+        
+        # Find the entry point function
+        entry_func = None
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "execute":
+                entry_func = node
+                break
+        
+        if not entry_func:
+            return False, ["No 'execute' function found"]
+        
+        # Check signature matches expected
+        args = [arg.arg for arg in entry_func.args.args]
+        if "self" in args:
+            args.remove("self")
+        
+        return True, errors

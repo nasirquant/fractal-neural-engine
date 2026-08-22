@@ -1,0 +1,72 @@
+# FNSE Docker Ignore
+# ====================
+
+# Version control
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.mypy_cache
+.ruff_cache
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Checkpoints & data
+checkpoints/
+data/
+*.db
+*.sqlite
+
+# Skills (compiled)
+skills/__pycache__/
+
+# Testing
+.coverage
+.pytest_cache
+htmlcov/
+
+# Documentation build
+docs/_build/
+site/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Large files
+*.bin
+*.model
+*.weights
