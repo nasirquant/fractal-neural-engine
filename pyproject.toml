@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fnse"
+version = "1.0.0"
+description = "Fractal Neural Simulation Engine — Self-evolving multi-agent simulation framework"
+readme = "README.md"
+license = {text = "AGPL-3.0-or-later"}
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph",
+    "pydantic>=2.0",
+    "networkx",
+    "fastapi>=0.109",
+    "uvicorn[standard]",
+    "redis>=5.0",
+    "litellm",
+    "pydantic-settings",
+]
+optional-dependencies = {
+    "dev" = ["pytest>=7.0", "pytest-asyncio", "pytest-cov", "ruff", "mypy", "black", "pre-commit"],
+    "load" = ["locust"],
+    "docs" = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"],
+}
+
+[project.urls]
+Homepage = "https://github.com/nasirquant/fractal-neural-engine"
+Repository = "https://github.com/nasirquant/fractal-neural-engine"
+Issues = "https://github.com/nasirquant/fractal-neural-engine/issues"
+Documentation = "https://github.com/nasirquant/fractal-neural-engine#readme"
+
+[project.scripts]
+fnse = "run_simulation:main"
+fnse-api = "main:run_api"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["engine*", "config*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.py", "*.yaml", "*.yml"]
+
+[tool.setuptools]
+py-modules = ["run_simulation", "config", "main"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true

@@ -602,3 +602,15 @@ if __name__ == "__main__":
         workers=settings.api_workers,
         reload=True
     )
+
+
+def run_api():
+    """Entry point for fnse-api command."""
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        workers=settings.api_workers,
+        reload=True
+    )

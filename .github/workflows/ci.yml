@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          pip install -e .[dev]
+      - name: Run linters
+        run: |
+          ruff check .
+          black --check .
+          mypy engine/ config.py
+      - name: Run tests
+        run: |
+          pytest tests/ -v --cov=engine --cov=config --cov-fail-under=50
+        env:
+          REDIS_URL: redis://localhost:6379/0
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t fnse:test .
+      - name: Test Docker image
+        run: |
+          docker run --rm fnse:test python -c "import engine; print('Import OK')"

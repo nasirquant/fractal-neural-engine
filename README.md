@@ -7,10 +7,21 @@
   <img src="https://img.shields.io/badge/fastapi-0.109+-green.svg" alt="FastAPI">
   <img src="https://img.shields.io/badge/redis-7.0+-red.svg" alt="Redis">
   <img src="https://img.shields.io/badge/docker-ready-blue.svg" alt="Docker">
+  <img src="https://img.shields.io/pypi/v/fnse.svg" alt="PyPI">
+  <img src="https://github.com/nasirquant/fractal-neural-engine/workflows/CI/badge.svg" alt="CI">
+  <img src="https://img.shields.io/badge/security-SECURITY.md-brightgreen.svg" alt="Security Policy">
 </p>
 
 <p align="center">
-  <strong>A production-grade, self-evolving multi-agent simulation framework with recursive skill compilation, graph-based memory, and enterprise safeguards.</strong>
+  <strong>A production-grade, self-evolving multi-agent simulation framework with recursive skill compilation, graph-based memory (GraphRAG), and enterprise safeguards.</strong>
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/fnse/"><strong>PyPI Package</strong></a> •
+  <a href="https://github.com/nasirquant/fractal-neural-engine/releases"><strong>Releases</strong></a> •
+  <a href="#-quick-start"><strong>Quick Start</strong></a> •
+  <a href="https://github.com/nasirquant/fractal-neural-engine#readme"><strong>Documentation</strong></a> •
+  <a href="SECURITY.md"><strong>Security Policy</strong></a>
 </p>
 
 <p align="center">
@@ -114,13 +125,21 @@ graph TB
 
 ---
 
-## 🚀 Quickstart
+## 🚀 Quick Start
 
-### Option 1: Docker Compose (Recommended for Production)
+### Option 1: PyPI Package (Recommended)
+```bash
+# Install from PyPI (when published)
+pip install fnse
 
+# Run simulation
+fnse --agents 10 --ticks 100
+```
+
+### Option 2: Docker Compose (Production)
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-org/fractal-neural-engine.git
+git clone https://github.com/nasirquant/fractal-neural-engine.git
 cd fractal-neural-engine
 
 # 2. Configure environment
@@ -143,8 +162,8 @@ open http://localhost:8000/docs
 - **Worker**: Background simulation processing
 - **Grafana**: http://localhost:3000 (admin/admin) - Optional monitoring
 - **Prometheus**: http://localhost:9090 - Optional metrics
-### Option 2: Python CLI (Development & Testing)
 
+### Option 3: Python CLI (Development & Testing)
 ```bash
 # 1. Install dependencies
 pip install -r requirements.txt
@@ -166,8 +185,7 @@ python run_simulation.py \
 python run_simulation.py --help
 ```
 
-### Option 3: Direct Python API
-
+### Option 4: Direct Python API
 ```python
 import asyncio
 from run_simulation import run_async_simulation
@@ -470,15 +488,48 @@ locust -f tests/load_test.py --host=http://localhost:8000
 ### Development Setup
 ```bash
 # Install dev dependencies
-pip install -r requirements-dev.txt
+pip install -e .[dev]
 
 # Install pre-commit hooks
 pre-commit install
 
 # Run linters
 ruff check .
-mypy engine/
+mypy engine/ config.py
 black --check .
+```
+
+### Running Tests
+```bash
+# Unit tests
+pytest tests/ -v
+
+# With coverage
+pytest --cov=engine --cov=config tests/ --cov-fail-under=50
+```
+
+---
+
+## 📦 Releases & Packages
+
+### PyPI Package
+The `fnse` package is published to PyPI:
+- **Package**: [`fnse`](https://pypi.org/project/fnse/)
+- **Install**: `pip install fnse`
+- **CLI**: `fnse --help` or `fnse-api` for the FastAPI server
+
+### GitHub Releases
+- **Releases**: [GitHub Releases](https://github.com/nasirquant/fractal-neural-engine/releases)
+- **Changelog**: See [CHANGELOG.md](CHANGELOG.md) (if exists) or release notes
+- **Versioning**: [Semantic Versioning](https://semver.org/)
+
+### Docker Images
+```bash
+# Build locally
+docker build -t fnse:latest .
+
+# Or use pre-built (when available)
+docker pull ghcr.io/nasirquant/fractal-neural-engine:latest
 ```
 
 ---

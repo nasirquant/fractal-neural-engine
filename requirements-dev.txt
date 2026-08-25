@@ -1,0 +1,11 @@
+# Development dependencies for FNSE
+# Install with: pip install -e .[dev]
+
+pytest>=7.0
+pytest-asyncio
+pytest-cov
+ruff
+mypy
+black
+pre-commit
+locust  # for load testing
