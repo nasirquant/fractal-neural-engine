@@ -10,6 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Configure git to prevent line ending conversion
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - name: Normalize line endings
         run: |
@@ -43,6 +45,8 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Configure git to prevent line ending conversion
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - name: Normalize line endings
         run: |
