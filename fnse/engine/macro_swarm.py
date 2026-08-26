@@ -18,7 +18,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel, Field
 
-from config import settings
+from fnse.config import settings
 
 from .graph_rag import GraphRAG, graph_rag_manager
 from .state import (

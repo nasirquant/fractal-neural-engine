@@ -15,12 +15,12 @@ from typing import Any
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from config import settings
-from engine.graph_rag import graph_rag_manager
-from engine.macro_swarm import SwarmConfig, swarm_manager
-from engine.safeguards import AlertSeverity, SafeguardSystem
-from engine.skill_compiler import skill_registry
-from engine.state import AgentRole
+from fnse.config import settings
+from fnse.engine.graph_rag import graph_rag_manager
+from fnse.engine.macro_swarm import SwarmConfig, swarm_manager
+from fnse.engine.safeguards import AlertSeverity, SafeguardSystem
+from fnse.engine.skill_compiler import skill_registry
+from fnse.engine.state import AgentRole
 
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)

@@ -17,7 +17,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any
 
-from config import settings
+from fnse.config import settings
 
 from .state import SkillManifest
 

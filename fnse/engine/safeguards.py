@@ -14,7 +14,7 @@ from threading import RLock
 from typing import Any
 from uuid import uuid4
 
-from config import settings
+from fnse.config import settings
 
 from .state import SimulationTickPacket
 

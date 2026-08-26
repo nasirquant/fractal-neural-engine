@@ -32,18 +32,8 @@ Issues = "https://github.com/nasirquant/fractal-neural-engine/issues"
 Documentation = "https://github.com/nasirquant/fractal-neural-engine#readme"
 
 [project.scripts]
-fnse = "run_simulation:main"
-fnse-api = "main:run_api"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["engine*", "config*"]
-
-[tool.setuptools.package-data]
-"*" = ["*.py", "*.yaml", "*.yml"]
-
-[tool.setuptools]
-py-modules = ["run_simulation", "config", "main"]
+fnse = "fnse.run_simulation:main"
+fnse-api = "fnse.main:app"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -57,3 +47,10 @@ target-version = "py311"
 python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["fnse*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.py", "*.yaml", "*.yml"]

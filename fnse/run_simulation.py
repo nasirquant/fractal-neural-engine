@@ -17,9 +17,9 @@ import time
 from datetime import datetime
 from typing import Any
 
-from config import settings
-from engine.macro_swarm import AgentRole, MacroSwarm, SwarmConfig, swarm_manager
-from engine.safeguards import AlertSeverity, SafeguardSystem
+from fnse.config import settings
+from fnse.engine.macro_swarm import AgentRole, MacroSwarm, SwarmConfig, swarm_manager
+from fnse.engine.safeguards import AlertSeverity, SafeguardSystem
 
 # Configure logging
 logging.basicConfig(
