@@ -10,21 +10,21 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Query
-from fastapi.responses import JSONResponse
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from config import settings
-from engine.macro_swarm import SwarmConfig, swarm_manager, MacroSwarm
-from engine.state import AgentRole, AgentState, SimulationTickPacket, EpochResult
-from engine.safeguards import SafeguardSystem, AlertSeverity, SafetyAlert
 from engine.graph_rag import graph_rag_manager
+from engine.macro_swarm import SwarmConfig, swarm_manager
+from engine.safeguards import AlertSeverity, SafeguardSystem
 from engine.skill_compiler import skill_registry
+from engine.state import AgentRole
 
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
+
 
 class CreateEpochRequest(BaseModel):
     num_agents: int = Field(default=10, ge=1, le=100)
@@ -33,15 +33,17 @@ class CreateEpochRequest(BaseModel):
     loss_function: str = Field(default="mse", pattern="^(mse|mae|cosine|custom)$")
     convergence_threshold: float = Field(default=0.01, ge=0.0, le=1.0)
     checkpoint_interval: int = Field(default=10, ge=1, le=100)
-    agent_roles: Optional[List[str]] = None
-    seed_entities: Optional[List[Dict[str, Any]]] = None
-    model: Optional[str] = None
-    model_temperature: Optional[float] = None
+    agent_roles: list[str] | None = None
+    seed_entities: list[dict[str, Any]] | None = None
+    model: str | None = None
+    model_temperature: float | None = None
+
 
 class CreateEpochResponse(BaseModel):
     epoch_id: str
     status: str
-    config: Dict[str, Any]
+    config: dict[str, Any]
+
 
 class TickResponse(BaseModel):
     epoch_id: str
@@ -49,8 +51,9 @@ class TickResponse(BaseModel):
     global_loss: float
     convergence_rate: float
     agent_count: int
-    alerts: List[Dict[str, Any]]
+    alerts: list[dict[str, Any]]
     timestamp: str
+
 
 class EpochStatusResponse(BaseModel):
     epoch_id: str
@@ -59,44 +62,50 @@ class EpochStatusResponse(BaseModel):
     global_loss: float
     convergence_rate: float
     converged: bool
-    agent_states: Dict[str, Dict[str, Any]]
-    circuit_breakers: Dict[str, str]
-    alerts_summary: Dict[str, int]
+    agent_states: dict[str, dict[str, Any]]
+    circuit_breakers: dict[str, str]
+    alerts_summary: dict[str, int]
     checkpoints: int
     uptime_seconds: float
+
 
 class EpochResultResponse(BaseModel):
     epoch_id: str
     converged: bool
     final_global_loss: float
     total_ticks: int
-    loss_trajectory: List[float]
+    loss_trajectory: list[float]
     total_duration_seconds: float
     total_tokens: int
-    top_performers: List[str]
+    top_performers: list[str]
     skills_compiled: int
     circuit_breaks: int
     rollbacks_performed: int
+
 
 class SkillCompileRequest(BaseModel):
     name: str
     description: str
     source_code: str
     author_agent_id: str
-    test_cases: Optional[List[Dict[str, Any]]] = None
+    test_cases: list[dict[str, Any]] | None = None
+
 
 class GraphQueryRequest(BaseModel):
-    query_vector: Optional[List[float]] = None
-    node_types: Optional[List[str]] = None
+    query_vector: list[float] | None = None
+    node_types: list[str] | None = None
     top_k: int = 10
-    center_node: Optional[str] = None
+    center_node: str | None = None
     radius: int = 2
 
-class GraphSeedRequest(BaseModel):
-    entities: List[Dict[str, Any]]
 
-_running_epochs: Dict[str, asyncio.Task] = {}
-_epoch_safeguards: Dict[str, SafeguardSystem] = {}
+class GraphSeedRequest(BaseModel):
+    entities: list[dict[str, Any]]
+
+
+_running_epochs: dict[str, asyncio.Task] = {}
+_epoch_safeguards: dict[str, SafeguardSystem] = {}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -112,11 +121,19 @@ async def lifespan(app: FastAPI):
     for epoch_id, safeguard in _epoch_safeguards.items():
         safeguard.emergency_stop()
 
-app = FastAPI(title="FNSE", description="API for fractal neural swarm simulations", version="1.0.0", lifespan=lifespan)
+
+app = FastAPI(
+    title="FNSE",
+    description="API for fractal neural swarm simulations",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     return {"status": "healthy", "service": "fnse"}
+
 
 @app.post("/epochs", response_model=CreateEpochResponse, status_code=201)
 async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
@@ -131,7 +148,14 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
     config = SwarmConfig(
         epoch_id=f"epoch_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
         num_agents=request.num_agents,
-        agent_roles=roles or [AgentRole.EXPLORER, AgentRole.OPTIMIZER, AgentRole.CRITIC, AgentRole.SYNTHESIZER, AgentRole.COORDINATOR],
+        agent_roles=roles
+        or [
+            AgentRole.EXPLORER,
+            AgentRole.OPTIMIZER,
+            AgentRole.CRITIC,
+            AgentRole.SYNTHESIZER,
+            AgentRole.COORDINATOR,
+        ],
         max_ticks=request.max_ticks,
         global_objective=request.global_objective,
         loss_function=request.loss_function,
@@ -141,12 +165,18 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
 
     swarm = swarm_manager.create_swarm(config)
 
-    safeguard = SafeguardSystem(epoch_id=config.epoch_id, checkpoint_interval=request.checkpoint_interval)
+    safeguard = SafeguardSystem(
+        epoch_id=config.epoch_id, checkpoint_interval=request.checkpoint_interval
+    )
     _epoch_safeguards[config.epoch_id] = safeguard
 
     if request.seed_entities:
         for entity in request.seed_entities:
-            graph_rag_manager.get_or_create(config.epoch_id).add_node(node_type=entity.get("type", "entity"), label=entity.get("label", ""), properties=entity.get("properties", {}))
+            graph_rag_manager.get_or_create(config.epoch_id).add_node(
+                node_type=entity.get("type", "entity"),
+                label=entity.get("label", ""),
+                properties=entity.get("properties", {}),
+            )
 
     if request.model:
         swarm._model = request.model
@@ -155,7 +185,10 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
 
     logger.info(f"Created epoch: {config.epoch_id} with {len(swarm.agents)} agents")
 
-    return CreateEpochResponse(epoch_id=config.epoch_id, status="initialized", config=config.model_dump())
+    return CreateEpochResponse(
+        epoch_id=config.epoch_id, status="initialized", config=config.model_dump()
+    )
+
 
 @app.get("/epochs/{epoch_id}", response_model=EpochStatusResponse)
 async def get_epoch_status(epoch_id: str) -> EpochStatusResponse:
@@ -187,12 +220,16 @@ async def get_epoch_status(epoch_id: str) -> EpochStatusResponse:
         tick_number=swarm.tick_number,
         global_loss=swarm.global_loss_history[-1] if swarm.global_loss_history else 1.0,
         convergence_rate=swarm._compute_convergence_rate(),
-        converged=swarm.global_loss_history[-1] < swarm.config.convergence_threshold if swarm.global_loss_history else False,
+        converged=(
+            swarm.global_loss_history[-1] < swarm.config.convergence_threshold
+            if swarm.global_loss_history
+            else False
+        ),
         agent_states=agent_states,
         circuit_breakers=safeguard_status.get("circuit_breakers", {}),
         alerts_summary=safeguard_status.get("alerts", {}),
         checkpoints=safeguard_status.get("checkpoints", {}).get("total", 0),
-        uptime_seconds=(datetime.utcnow() - swarm._start_time).total_seconds()
+        uptime_seconds=(datetime.utcnow() - swarm._start_time).total_seconds(),
     )
 
 
@@ -203,7 +240,9 @@ async def step_epoch(epoch_id: str) -> TickResponse:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
 
     if swarm._running:
-        raise HTTPException(409, "Epoch is already running. Stop it first or wait for completion.")
+        raise HTTPException(
+            409, "Epoch is already running. Stop it first or wait for completion."
+        )
 
     safeguard = _epoch_safeguards.get(epoch_id)
 
@@ -224,7 +263,7 @@ async def step_epoch(epoch_id: str) -> TickResponse:
             "source": a.source,
             "message": a.message,
             "details": a.details,
-            "timestamp": a.timestamp.isoformat()
+            "timestamp": a.timestamp.isoformat(),
         }
         for a in alerts
     ]
@@ -236,12 +275,12 @@ async def step_epoch(epoch_id: str) -> TickResponse:
         convergence_rate=swarm._compute_convergence_rate(),
         agent_count=len(swarm.agents),
         alerts=alert_dicts,
-        timestamp=datetime.utcnow().isoformat()
+        timestamp=datetime.utcnow().isoformat(),
     )
 
 
 @app.post("/epochs/{epoch_id}/run")
-async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> Dict[str, str]:
+async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -265,8 +304,13 @@ async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> Dict[st
                         break
 
                 if swarm.global_loss_history:
-                    if swarm.global_loss_history[-1] < swarm.config.convergence_threshold:
-                        logger.info(f"Epoch {epoch_id} converged at tick {swarm.tick_number}")
+                    if (
+                        swarm.global_loss_history[-1]
+                        < swarm.config.convergence_threshold
+                    ):
+                        logger.info(
+                            f"Epoch {epoch_id} converged at tick {swarm.tick_number}"
+                        )
                         break
 
                 await asyncio.sleep(0.01)
@@ -285,7 +329,7 @@ async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> Dict[st
 
 
 @app.post("/epochs/{epoch_id}/stop")
-async def stop_epoch(epoch_id: str) -> Dict[str, str]:
+async def stop_epoch(epoch_id: str) -> dict[str, str]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -325,12 +369,12 @@ async def get_epoch_result(epoch_id: str) -> EpochResultResponse:
         top_performers=result.top_performers,
         skills_compiled=len(result.skills_compiled),
         circuit_breaks=safeguard_status.get("circuit_break_count", 0),
-        rollbacks_performed=safeguard_status.get("rollback_count", 0)
+        rollbacks_performed=safeguard_status.get("rollback_count", 0),
     )
 
 
 @app.delete("/epochs/{epoch_id}")
-async def delete_epoch(epoch_id: str) -> Dict[str, str]:
+async def delete_epoch(epoch_id: str) -> dict[str, str]:
     if epoch_id in _running_epochs:
         _running_epochs[epoch_id].cancel()
         try:
@@ -354,12 +398,12 @@ async def delete_epoch(epoch_id: str) -> Dict[str, str]:
 
 
 @app.get("/epochs")
-async def list_epochs() -> List[str]:
+async def list_epochs() -> list[str]:
     return swarm_manager.list_swarms()
 
 
 @app.post("/epochs/{epoch_id}/skills")
-async def compile_skill(epoch_id: str, request: SkillCompileRequest) -> Dict[str, Any]:
+async def compile_skill(epoch_id: str, request: SkillCompileRequest) -> dict[str, Any]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -373,20 +417,17 @@ async def compile_skill(epoch_id: str, request: SkillCompileRequest) -> Dict[str
         author_agent_id=request.author_agent_id,
         compilation_epoch=epoch_id,
         compilation_tick=swarm.tick_number,
-        test_cases=request.test_cases
+        test_cases=request.test_cases,
     )
 
     if not result.success:
         raise HTTPException(400, result.error)
 
-    return {
-        "skill_id": result.skill_id,
-        "test_results": result.test_results
-    }
+    return {"skill_id": result.skill_id, "test_results": result.test_results}
 
 
 @app.get("/epochs/{epoch_id}/skills")
-async def list_skills(epoch_id: str) -> List[Dict[str, Any]]:
+async def list_skills(epoch_id: str) -> list[dict[str, Any]]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -403,14 +444,14 @@ async def list_skills(epoch_id: str) -> List[Dict[str, Any]]:
             "author_agent_id": s.author_agent_id,
             "invocation_count": s.invocation_count,
             "success_rate": s.success_rate,
-            "created_at": s.created_at.isoformat()
+            "created_at": s.created_at.isoformat(),
         }
         for s in skills
     ]
 
 
 @app.get("/epochs/{epoch_id}/skills/{skill_id}")
-async def get_skill(epoch_id: str, skill_id: str) -> Dict[str, Any]:
+async def get_skill(epoch_id: str, skill_id: str) -> dict[str, Any]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -425,7 +466,7 @@ async def get_skill(epoch_id: str, skill_id: str) -> Dict[str, Any]:
 
 
 @app.post("/epochs/{epoch_id}/graph/seed")
-async def seed_graph(epoch_id: str, request: GraphSeedRequest) -> Dict[str, Any]:
+async def seed_graph(epoch_id: str, request: GraphSeedRequest) -> dict[str, Any]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -436,14 +477,14 @@ async def seed_graph(epoch_id: str, request: GraphSeedRequest) -> Dict[str, Any]
         graph.add_node(
             node_type=entity.get("type", "entity"),
             label=entity.get("label", ""),
-            properties=entity.get("properties", {})
+            properties=entity.get("properties", {}),
         )
 
     return {"status": "seeded", "nodes_added": len(request.entities)}
 
 
 @app.post("/epochs/{epoch_id}/graph/query")
-async def query_graph(epoch_id: str, request: GraphQueryRequest) -> Dict[str, Any]:
+async def query_graph(epoch_id: str, request: GraphQueryRequest) -> dict[str, Any]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -452,12 +493,16 @@ async def query_graph(epoch_id: str, request: GraphQueryRequest) -> Dict[str, An
 
     if request.query_vector:
         from engine.state import CompressedVector
-        vector = CompressedVector(dimensions=len(request.query_vector), values=request.query_vector)
-        results = graph.semantic_search(vector, top_k=request.top_k, node_types=request.node_types)
+
+        vector = CompressedVector(
+            dimensions=len(request.query_vector), values=request.query_vector
+        )
+        results = graph.semantic_search(
+            vector, top_k=request.top_k, node_types=request.node_types
+        )
         return {
             "results": [
-                {"node": node.model_dump(), "score": score}
-                for node, score in results
+                {"node": node.model_dump(), "score": score} for node, score in results
             ]
         }
 
@@ -465,14 +510,14 @@ async def query_graph(epoch_id: str, request: GraphQueryRequest) -> Dict[str, An
         result = graph.extract_subgraph(request.center_node, radius=request.radius)
         return {
             "nodes": [n.model_dump() for n in result.nodes],
-            "edges": [e.model_dump() for e in result.edges]
+            "edges": [e.model_dump() for e in result.edges],
         }
 
     return {"stats": graph.get_stats()}
 
 
 @app.get("/epochs/{epoch_id}/graph/stats")
-async def get_graph_stats(epoch_id: str) -> Dict[str, Any]:
+async def get_graph_stats(epoch_id: str) -> dict[str, Any]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -482,7 +527,7 @@ async def get_graph_stats(epoch_id: str) -> Dict[str, Any]:
 
 
 @app.get("/epochs/{epoch_id}/safeguards/status")
-async def get_safeguard_status(epoch_id: str) -> Dict[str, Any]:
+async def get_safeguard_status(epoch_id: str) -> dict[str, Any]:
     safeguard = _epoch_safeguards.get(epoch_id)
     if not safeguard:
         raise HTTPException(404, f"Safeguard system not found for epoch {epoch_id}")
@@ -492,10 +537,8 @@ async def get_safeguard_status(epoch_id: str) -> Dict[str, Any]:
 
 @app.get("/epochs/{epoch_id}/alerts")
 async def get_alerts(
-    epoch_id: str,
-    severity: Optional[AlertSeverity] = None,
-    limit: int = 100
-) -> List[Dict[str, Any]]:
+    epoch_id: str, severity: AlertSeverity | None = None, limit: int = 100
+) -> list[dict[str, Any]]:
     safeguard = _epoch_safeguards.get(epoch_id)
     if not safeguard:
         raise HTTPException(404, f"Safeguard system not found for epoch {epoch_id}")
@@ -515,14 +558,14 @@ async def get_alerts(
             "message": a.message,
             "details": a.details,
             "acknowledged": a.acknowledged,
-            "resolved": a.resolved
+            "resolved": a.resolved,
         }
         for a in alerts
     ]
 
 
 @app.post("/epochs/{epoch_id}/alerts/{alert_id}/acknowledge")
-async def acknowledge_alert(epoch_id: str, alert_id: str) -> Dict[str, str]:
+async def acknowledge_alert(epoch_id: str, alert_id: str) -> dict[str, str]:
     safeguard = _epoch_safeguards.get(epoch_id)
     if not safeguard:
         raise HTTPException(404, f"Safeguard system not found for epoch {epoch_id}")
@@ -536,7 +579,7 @@ async def acknowledge_alert(epoch_id: str, alert_id: str) -> Dict[str, str]:
 
 
 @app.get("/epochs/{epoch_id}/agents")
-async def list_agents(epoch_id: str) -> List[Dict[str, Any]]:
+async def list_agents(epoch_id: str) -> list[dict[str, Any]]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -559,7 +602,7 @@ async def list_agents(epoch_id: str) -> List[Dict[str, Any]]:
 
 
 @app.get("/epochs/{epoch_id}/agents/{agent_id}")
-async def get_agent(epoch_id: str, agent_id: str) -> Dict[str, Any]:
+async def get_agent(epoch_id: str, agent_id: str) -> dict[str, Any]:
     swarm = swarm_manager.get_swarm(epoch_id)
     if not swarm:
         raise HTTPException(404, f"Epoch {epoch_id} not found")
@@ -574,7 +617,9 @@ async def get_agent(epoch_id: str, agent_id: str) -> Dict[str, Any]:
         "agent_id": agent_id,
         "role": agent_node.role.value,
         "status": state.status.value,
-        "working_memory": state.working_memory.model_dump() if state.working_memory else None,
+        "working_memory": (
+            state.working_memory.model_dump() if state.working_memory else None
+        ),
         "long_term_memory_ref": state.long_term_memory_ref,
         "knowledge_graph_ref": state.knowledge_graph_ref,
         "current_objective": state.current_objective,
@@ -595,22 +640,24 @@ async def get_agent(epoch_id: str, agent_id: str) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.api_host,
         port=settings.api_port,
         workers=settings.api_workers,
-        reload=True
+        reload=True,
     )
 
 
 def run_api():
     """Entry point for fnse-api command."""
     import uvicorn
+
     uvicorn.run(
         "main:app",
         host=settings.api_host,
         port=settings.api_port,
         workers=settings.api_workers,
-        reload=True
+        reload=True,
     )
