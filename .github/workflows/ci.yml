@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Normalize line endings
+        run: |
+          find . -name "*.toml" -o -name "*.yml" -o -name "*.yaml" -o -name "*.cfg" -o -name "*.ini" | xargs -r dos2unix 2>/dev/null || true
+          find . -name "Dockerfile" | xargs -r dos2unix 2>/dev/null || true
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -39,6 +43,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Normalize line endings
+        run: |
+          find . -name "*.toml" -o -name "*.yml" -o -name "*.yaml" -o -name "*.cfg" -o -name "*.ini" | xargs -r dos2unix 2>/dev/null || true
+          find . -name "Dockerfile" | xargs -r dos2unix 2>/dev/null || true
       - name: Build Docker image
         run: docker build -t fnse:test .
       - name: Test Docker image
