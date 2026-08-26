@@ -10,9 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - name: Configure git to prevent line ending conversion
         run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
       - name: Normalize line endings
         run: |
           sudo apt-get update && sudo apt-get install -y dos2unix
@@ -45,9 +45,9 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - name: Configure git to prevent line ending conversion
         run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
       - name: Normalize line endings
         run: |
           sudo apt-get update && sudo apt-get install -y dos2unix
