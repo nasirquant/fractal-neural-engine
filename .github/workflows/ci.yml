@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Normalize line endings
         run: |
+          sudo apt-get update && sudo apt-get install -y dos2unix
           find . -name "*.toml" -o -name "*.yml" -o -name "*.yaml" -o -name "*.cfg" -o -name "*.ini" | xargs -r dos2unix 2>/dev/null || true
           find . -name "Dockerfile" | xargs -r dos2unix 2>/dev/null || true
       - uses: actions/setup-python@v5
@@ -45,6 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Normalize line endings
         run: |
+          sudo apt-get update && sudo apt-get install -y dos2unix
           find . -name "*.toml" -o -name "*.yml" -o -name "*.yaml" -o -name "*.cfg" -o -name "*.ini" | xargs -r dos2unix 2>/dev/null || true
           find . -name "Dockerfile" | xargs -r dos2unix 2>/dev/null || true
       - name: Build Docker image
