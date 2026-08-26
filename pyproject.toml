@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fnse"
 version = "1.0.0"
-description = "Fractal Neural Simulation Engine — Self-evolving multi-agent simulation framework"
+description = "Fractal Neural Simulation Engine - Self-evolving multi-agent simulation framework"
 readme = "README.md"
 license = {text = "AGPL-3.0-or-later"}
 requires-python = ">=3.10"
