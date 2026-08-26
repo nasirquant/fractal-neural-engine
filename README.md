@@ -597,4 +597,4 @@ If you need a commercial license with different terms (e.g., no source disclosur
 | `LOG_LEVEL` | `INFO` | Log level |
 | `LOG_FORMAT` | `json` | Log format |
 
-See [.env.example](.env.example) for complete list.
+See [.env.example](.env.example) for complete list."# Trigger CI"  
