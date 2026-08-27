@@ -7,9 +7,8 @@ handles tick-based message passing, and evaluates the global loss function.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from threading import RLock
 from typing import Any, TypedDict
 
@@ -105,7 +104,7 @@ class MacroSwarm:
         self.graph_rag: GraphRAG = graph_rag_manager.get_or_create(config.epoch_id)
         self._lock = RLock()
         self._running = False
-        self._start_time = datetime.utcnow()
+        self._start_time = datetime.now(UTC)
 
         # LiteLLM configuration
         self._model = settings.default_model
@@ -120,7 +119,7 @@ class MacroSwarm:
             litellm.drop_params = True
             litellm.set_verbose = False
         # Loss function registry
-        from typing import Callable
+        from collections.abc import Callable
 
         LossFn = Callable[[dict[str, float]], float]
         self._loss_functions: dict[str, LossFn] = {
@@ -215,7 +214,7 @@ class MacroSwarm:
 
             agent.state.status = AgentStatus.IDLE
             agent.state.tick_count += 1
-            agent.state.updated_at = datetime.utcnow()
+            agent.state.updated_at = datetime.now(UTC)
 
             return {"agent_id": agent.agent_id, "contribution": 0.0}
 
@@ -246,7 +245,6 @@ class MacroSwarm:
                 self.spawn_agents()
 
             self.tick_number += 1
-            tick_start = datetime.utcnow()
 
             # Build/compile agent graphs if needed
             for agent_node in self.agents.values():
@@ -262,7 +260,7 @@ class MacroSwarm:
                         config={"configurable": {"thread_id": agent_id}},
                     )
                     contributions[agent_id] = result.get("contribution", 0.0)
-                except Exception:
+                except (RuntimeError, ValueError, KeyError, TypeError):
                     agent_node.state.status = AgentStatus.ERROR
                     contributions[agent_id] = 0.0
 
@@ -280,7 +278,7 @@ class MacroSwarm:
             packet = SimulationTickPacket(
                 epoch_id=self.epoch_id,
                 tick_number=self.tick_number,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
                 agent_states={aid: an.state for aid, an in self.agents.items()},
                 message_queue=self.message_bus.copy(),
                 global_loss=global_loss,
@@ -305,8 +303,6 @@ class MacroSwarm:
 
     def _get_agent_context(self, agent_id: str) -> dict[str, Any]:
         """Retrieve relevant context from GraphRAG for an agent."""
-        agent = self.agents[agent_id]
-
         # Extract subgraph around agent
         subgraph = self.graph_rag.extract_subgraph(agent_id, radius=2, max_nodes=20)
 
@@ -362,7 +358,7 @@ class MacroSwarm:
                     if hasattr(response, "usage") and response.usage:
                         agent.state.total_tokens_used += response.usage.total_tokens
                     break
-            except Exception as e:
+            except (RuntimeError, ValueError, KeyError, TypeError, ConnectionError, TimeoutError) as e:
                 print(f"Model {model} failed: {e}")
                 continue
 
@@ -389,7 +385,7 @@ class MacroSwarm:
             parsed = json.loads(response_text)
             reasoning = parsed.get("reasoning", "")
             confidence = parsed.get("confidence", 0.5)
-        except:
+        except (json.JSONDecodeError, TypeError, ValueError):
             reasoning = response_text[:500]
             confidence = 0.5
 
@@ -446,6 +442,7 @@ class MacroSwarm:
         for msg in self.message_bus:
             if msg.recipient_id and msg.recipient_id in self.agents:
                 recipient = self.agents[msg.recipient_id]
+                _ = recipient  # Acknowledge recipient exists
                 # Update recipient's working memory based on message
                 # In production: merge vectors, update context
 
@@ -524,10 +521,11 @@ class MacroSwarm:
 
     def get_epoch_result(self) -> EpochResult:
         """Get final epoch result."""
+        now = datetime.now(UTC)
         return EpochResult(
             epoch_id=self.epoch_id,
             started_at=self._start_time,
-            completed_at=datetime.utcnow(),
+            completed_at=now,
             total_ticks=self.tick_number,
             converged=(
                 self.global_loss_history[-1] < self.config.convergence_threshold
@@ -541,7 +539,7 @@ class MacroSwarm:
             agent_final_states={aid: an.state for aid, an in self.agents.items()},
             total_tokens=sum(a.state.total_tokens_used for a in self.agents.values()),
             total_duration_seconds=(
-                datetime.utcnow() - self._start_time
+                now - self._start_time
             ).total_seconds(),
         )
 

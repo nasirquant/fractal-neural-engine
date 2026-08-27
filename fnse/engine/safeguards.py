@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from threading import RLock
@@ -43,7 +43,7 @@ class SafetyAlert:
     """A safety alert/event."""
 
     alert_id: str = field(default_factory=lambda: str(uuid4()))
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     severity: AlertSeverity = AlertSeverity.INFO
     source: str = ""  # Component that generated the alert
     message: str = ""
@@ -59,7 +59,7 @@ class Checkpoint:
     checkpoint_id: str = field(default_factory=lambda: str(uuid4()))
     epoch_id: str = ""
     tick_number: int = 0
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     tick_packet: SimulationTickPacket | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     size_bytes: int = 0
@@ -94,14 +94,12 @@ class CircuitBreaker:
     @property
     def state(self) -> CircuitState:
         with self._lock:
-            if self._state == CircuitState.OPEN:
-                # Check if timeout has elapsed to transition to half-open
-                if self._last_failure_time:
-                    elapsed = (
-                        datetime.utcnow() - self._last_failure_time
-                    ).total_seconds()
-                    if elapsed >= self.timeout_seconds:
-                        self._transition_to(CircuitState.HALF_OPEN)
+            if (
+                self._state == CircuitState.OPEN
+                and self._last_failure_time
+                and (datetime.now(UTC) - self._last_failure_time).total_seconds() >= self.timeout_seconds
+            ):
+                self._transition_to(CircuitState.HALF_OPEN)
             return self._state
 
     def _transition_to(self, new_state: CircuitState) -> None:
@@ -110,8 +108,9 @@ class CircuitBreaker:
         for callback in self._state_change_callbacks:
             try:
                 callback(old_state, new_state)
-            except Exception:
-                pass  # Don't let callbacks break the circuit breaker
+            except (RuntimeError, ValueError, KeyError, TypeError, AttributeError):
+                # Don't let callbacks break the circuit breaker
+                pass
 
     def record_success(self) -> None:
         with self._lock:
@@ -130,7 +129,7 @@ class CircuitBreaker:
 
             self._failure_count += 1
             self._success_count = 0
-            self._last_failure_time = datetime.utcnow()
+            self._last_failure_time = datetime.now(UTC)
 
             if (
                 self._state == CircuitState.HALF_OPEN
@@ -148,7 +147,7 @@ class CircuitBreaker:
         try:
             yield
             self.record_success()
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError, TypeError, AttributeError) as e:
             self.record_failure(e)
             raise
 
@@ -442,7 +441,7 @@ class CheckpointManager:
             try:
                 data = checkpoint_file.read_text()
                 return SimulationTickPacket.model_validate_json(data)
-            except Exception:
+            except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, OSError):
                 return None
 
     def get_epoch_checkpoints(self, epoch_id: str) -> list[Checkpoint]:

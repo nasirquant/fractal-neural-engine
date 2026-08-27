@@ -14,7 +14,7 @@ import json
 import logging
 import sys
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fnse.config import settings
@@ -70,7 +70,7 @@ class SimulationRunner:
                     logger.warning(f"Invalid agent role: {role_str}, using defaults")
 
         config = SwarmConfig(
-            epoch_id=f"epoch_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            epoch_id=f"epoch_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}",
             num_agents=self.num_agents,
             agent_roles=roles
             or [
@@ -149,12 +149,12 @@ class SimulationRunner:
         if self.swarm:
             try:
                 self.swarm._running = False
-            except Exception as e:
+            except (RuntimeError, ValueError, KeyError, TypeError, AttributeError) as e:
                 self._log(f"Error stopping swarm: {e}", "warning")
         if self.safeguard:
             try:
                 self.safeguard.emergency_stop()
-            except Exception as e:
+            except (RuntimeError, ValueError, KeyError, TypeError, AttributeError) as e:
                 self._log(f"Error shutting down safeguard: {e}", "warning")
 
     def save_results(self, result: dict[str, Any], filepath: str):
@@ -244,7 +244,6 @@ class SimulationRunner:
             key=lambda x: x[1]["successes"] - x[1]["failures"],
             reverse=True,
         )[:5]
-        top_performer_ids = [aid for aid, _ in top_performers]
         return {
             "epoch_id": self.epoch_id,
             "converged": converged,

@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import importlib.util
+import json
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -92,12 +93,10 @@ class SkillValidator:
 
             # Check for dangerous function calls
             if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name):
-                    if node.func.id in ("eval", "exec", "compile", "__import__"):
-                        errors.append(f"Dangerous function call: {node.func.id}")
-                elif isinstance(node.func, ast.Attribute):
-                    if node.func.attr in ("eval", "exec", "compile", "__import__"):
-                        errors.append(f"Dangerous method call: {node.func.attr}")
+                if isinstance(node.func, ast.Name) and node.func.id in ("eval", "exec", "compile", "__import__"):
+                    errors.append(f"Dangerous function call: {node.func.id}")
+                elif isinstance(node.func, ast.Attribute) and node.func.attr in ("eval", "exec", "compile", "__import__"):
+                    errors.append(f"Dangerous method call: {node.func.attr}")
 
         return len(errors) == 0, errors
 
@@ -169,7 +168,7 @@ class SkillCompiler:
                     "error_type": error_type,
                     "frequency": len(trajs),
                     "common_context_keys": list(common_keys),
-                    "affected_roles": list(set(t.agent_role for t in trajs)),
+                    "affected_roles": list({t.agent_role for t in trajs}),
                     "sample_trajectory": trajs[0],
                 }
                 patterns.append(pattern)
@@ -259,7 +258,7 @@ def execute(input_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, An
 
         try:
             skill_file.write_text(wrapped_code)
-        except Exception as e:
+        except OSError as e:
             return CompilationResult(
                 success=False, error=f"Failed to write skill file: {e}"
             )
@@ -290,7 +289,7 @@ def execute(input_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, An
                             "output": result,
                             "expected": expected,
                         }
-                except Exception as e:
+                except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
                     failed += 1
                     test_results[f"test_{i}"] = {"passed": False, "error": str(e)}
 
@@ -337,7 +336,7 @@ def execute(input_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, An
 
         try:
             skill_file.write_text(wrapped_code)
-        except Exception as e:
+        except OSError as e:
             return CompilationResult(
                 success=False, error=f"Failed to write skill file: {e}"
             )
@@ -368,7 +367,7 @@ def execute(input_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, An
                             "output": result,
                             "expected": expected,
                         }
-                except Exception as e:
+                except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
                     failed += 1
                     test_results[f"test_{i}"] = {"passed": False, "error": str(e)}
 
@@ -428,7 +427,7 @@ def safe_execute(*args, **kwargs) -> Dict[str, Any]:
     try:
         result = execute(*args, **kwargs)
         return {{"success": True, "result": result, "error": None}}
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
         return {{
             "success": False, 
             "result": None, 
@@ -471,7 +470,7 @@ if __name__ == "__main__":
             self._loaded_skills[skill_id] = module.safe_execute
             return CompilationResult(success=True, skill_id=skill_id)
 
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
             return CompilationResult(success=False, error=f"Failed to load skill: {e}")
 
     def load_skill(self, skill_id: str) -> Callable | None:
@@ -505,7 +504,7 @@ if __name__ == "__main__":
                     )
                     self._skill_manifests[skill_id] = manifest
                     return manifest
-                except Exception:
+                except (json.JSONDecodeError, OSError):
                     return None
             return None
 
@@ -524,7 +523,7 @@ if __name__ == "__main__":
                         )
                         self._skill_manifests[skill_id] = manifest
                         skills.append(manifest)
-                    except Exception:
+                    except (json.JSONDecodeError, OSError):
                         pass
 
             return skills

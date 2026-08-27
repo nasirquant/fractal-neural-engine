@@ -9,7 +9,7 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -112,13 +112,13 @@ async def lifespan(app: FastAPI):
     logger.info("Starting FNSE API server")
     yield
     logger.info("Shutting down FNSE API server")
-    for epoch_id, task in _running_epochs.items():
+    for task in _running_epochs.values():
         task.cancel()
         try:
             await task
         except asyncio.CancelledError:
             pass
-    for epoch_id, safeguard in _epoch_safeguards.items():
+    for safeguard in _epoch_safeguards.values():
         safeguard.emergency_stop()
 
 
@@ -146,7 +146,7 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
                 raise HTTPException(400, f"Invalid agent role: {role_str}")
 
     config = SwarmConfig(
-        epoch_id=f"epoch_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
+        epoch_id=f"epoch_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
         num_agents=request.num_agents,
         agent_roles=roles
         or [
@@ -229,7 +229,7 @@ async def get_epoch_status(epoch_id: str) -> EpochStatusResponse:
         circuit_breakers=safeguard_status.get("circuit_breakers", {}),
         alerts_summary=safeguard_status.get("alerts", {}),
         checkpoints=safeguard_status.get("checkpoints", {}).get("total", 0),
-        uptime_seconds=(datetime.utcnow() - swarm._start_time).total_seconds(),
+        uptime_seconds=(datetime.now(UTC) - swarm._start_time).total_seconds(),
     )
 
 
@@ -252,10 +252,6 @@ async def step_epoch(epoch_id: str) -> TickResponse:
     if safeguard:
         alerts = safeguard.on_tick_end(tick_packet)
 
-    converged = False
-    if swarm.global_loss_history:
-        converged = swarm.global_loss_history[-1] < swarm.config.convergence_threshold
-
     alert_dicts = [
         {
             "alert_id": a.alert_id,
@@ -275,7 +271,7 @@ async def step_epoch(epoch_id: str) -> TickResponse:
         convergence_rate=swarm._compute_convergence_rate(),
         agent_count=len(swarm.agents),
         alerts=alert_dicts,
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -303,20 +299,16 @@ async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> dict[st
                         logger.warning(f"Emergency stop triggered for epoch {epoch_id}")
                         break
 
-                if swarm.global_loss_history:
-                    if (
-                        swarm.global_loss_history[-1]
-                        < swarm.config.convergence_threshold
-                    ):
-                        logger.info(
-                            f"Epoch {epoch_id} converged at tick {swarm.tick_number}"
-                        )
-                        break
+                if swarm.global_loss_history and swarm.global_loss_history[-1] < swarm.config.convergence_threshold:
+                    logger.info(
+                        f"Epoch {epoch_id} converged at tick {swarm.tick_number}"
+                    )
+                    break
 
                 await asyncio.sleep(0.01)
 
             swarm._running = False
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError, TypeError) as e:
             logger.error(f"Error in simulation {epoch_id}: {e}")
             swarm._running = False
         finally:
