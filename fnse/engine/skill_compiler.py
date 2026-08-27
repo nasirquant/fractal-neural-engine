@@ -93,9 +93,19 @@ class SkillValidator:
 
             # Check for dangerous function calls
             if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id in ("eval", "exec", "compile", "__import__"):
+                if isinstance(node.func, ast.Name) and node.func.id in (
+                    "eval",
+                    "exec",
+                    "compile",
+                    "__import__",
+                ):
                     errors.append(f"Dangerous function call: {node.func.id}")
-                elif isinstance(node.func, ast.Attribute) and node.func.attr in ("eval", "exec", "compile", "__import__"):
+                elif isinstance(node.func, ast.Attribute) and node.func.attr in (
+                    "eval",
+                    "exec",
+                    "compile",
+                    "__import__",
+                ):
                     errors.append(f"Dangerous method call: {node.func.attr}")
 
         return len(errors) == 0, errors
@@ -289,7 +299,14 @@ def execute(input_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, An
                             "output": result,
                             "expected": expected,
                         }
-                except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
+                except (
+                    RuntimeError,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                    AttributeError,
+                    ZeroDivisionError,
+                ) as e:
                     failed += 1
                     test_results[f"test_{i}"] = {"passed": False, "error": str(e)}
 
@@ -367,7 +384,14 @@ def execute(input_data: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, An
                             "output": result,
                             "expected": expected,
                         }
-                except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
+                except (
+                    RuntimeError,
+                    ValueError,
+                    KeyError,
+                    TypeError,
+                    AttributeError,
+                    ZeroDivisionError,
+                ) as e:
                     failed += 1
                     test_results[f"test_{i}"] = {"passed": False, "error": str(e)}
 
@@ -470,7 +494,14 @@ if __name__ == "__main__":
             self._loaded_skills[skill_id] = module.safe_execute
             return CompilationResult(success=True, skill_id=skill_id)
 
-        except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, ZeroDivisionError) as e:
+        except (
+            RuntimeError,
+            ValueError,
+            KeyError,
+            TypeError,
+            AttributeError,
+            ZeroDivisionError,
+        ) as e:
             return CompilationResult(success=False, error=f"Failed to load skill: {e}")
 
     def load_skill(self, skill_id: str) -> Callable | None:

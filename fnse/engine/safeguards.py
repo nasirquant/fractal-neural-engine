@@ -97,7 +97,8 @@ class CircuitBreaker:
             if (
                 self._state == CircuitState.OPEN
                 and self._last_failure_time
-                and (datetime.now(UTC) - self._last_failure_time).total_seconds() >= self.timeout_seconds
+                and (datetime.now(UTC) - self._last_failure_time).total_seconds()
+                >= self.timeout_seconds
             ):
                 self._transition_to(CircuitState.HALF_OPEN)
             return self._state
@@ -441,7 +442,14 @@ class CheckpointManager:
             try:
                 data = checkpoint_file.read_text()
                 return SimulationTickPacket.model_validate_json(data)
-            except (RuntimeError, ValueError, KeyError, TypeError, AttributeError, OSError):
+            except (
+                RuntimeError,
+                ValueError,
+                KeyError,
+                TypeError,
+                AttributeError,
+                OSError,
+            ):
                 return None
 
     def get_epoch_checkpoints(self, epoch_id: str) -> list[Checkpoint]:

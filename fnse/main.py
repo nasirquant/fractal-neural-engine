@@ -299,7 +299,11 @@ async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> dict[st
                         logger.warning(f"Emergency stop triggered for epoch {epoch_id}")
                         break
 
-                if swarm.global_loss_history and swarm.global_loss_history[-1] < swarm.config.convergence_threshold:
+                if (
+                    swarm.global_loss_history
+                    and swarm.global_loss_history[-1]
+                    < swarm.config.convergence_threshold
+                ):
                     logger.info(
                         f"Epoch {epoch_id} converged at tick {swarm.tick_number}"
                     )

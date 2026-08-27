@@ -358,7 +358,14 @@ class MacroSwarm:
                     if hasattr(response, "usage") and response.usage:
                         agent.state.total_tokens_used += response.usage.total_tokens
                     break
-            except (RuntimeError, ValueError, KeyError, TypeError, ConnectionError, TimeoutError) as e:
+            except (
+                RuntimeError,
+                ValueError,
+                KeyError,
+                TypeError,
+                ConnectionError,
+                TimeoutError,
+            ) as e:
                 print(f"Model {model} failed: {e}")
                 continue
 
@@ -538,9 +545,7 @@ class MacroSwarm:
             loss_trajectory=self.global_loss_history,
             agent_final_states={aid: an.state for aid, an in self.agents.items()},
             total_tokens=sum(a.state.total_tokens_used for a in self.agents.values()),
-            total_duration_seconds=(
-                now - self._start_time
-            ).total_seconds(),
+            total_duration_seconds=(now - self._start_time).total_seconds(),
         )
 
     def rollback_to_checkpoint(self, tick: int) -> bool:
