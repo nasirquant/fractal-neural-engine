@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 from threading import RLock
 from typing import Any, TypedDict
 
@@ -104,7 +104,7 @@ class MacroSwarm:
         self.graph_rag: GraphRAG = graph_rag_manager.get_or_create(config.epoch_id)
         self._lock = RLock()
         self._running = False
-        self._start_time = datetime.now(UTC)
+        self._start_time = datetime.now(timezone.utc)
 
         # LiteLLM configuration
         self._model = settings.default_model

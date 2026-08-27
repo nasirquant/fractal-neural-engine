@@ -13,7 +13,7 @@ import json
 import logging
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fnse.config import settings
@@ -69,7 +69,7 @@ class SimulationRunner:
                     logger.warning(f"Invalid agent role: {role_str}, using defaults")
 
         config = SwarmConfig(
-            epoch_id=f"epoch_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}",
+            epoch_id=f"epoch_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}",
             num_agents=self.num_agents,
             agent_roles=roles
             or [

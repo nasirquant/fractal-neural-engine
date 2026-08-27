@@ -9,7 +9,7 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -146,7 +146,7 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
                 raise HTTPException(400, f"Invalid agent role: {role_str}")
 
     config = SwarmConfig(
-        epoch_id=f"epoch_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
+        epoch_id=f"epoch_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}",
         num_agents=request.num_agents,
         agent_roles=roles
         or [

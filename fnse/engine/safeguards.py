@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 from enum import Enum
 from pathlib import Path
 from threading import RLock
@@ -43,7 +43,7 @@ class SafetyAlert:
     """A safety alert/event."""
 
     alert_id: str = field(default_factory=lambda: str(uuid4()))
-    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     severity: AlertSeverity = AlertSeverity.INFO
     source: str = ""  # Component that generated the alert
     message: str = ""
