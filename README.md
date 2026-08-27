@@ -54,7 +54,8 @@ graph TB
         STATE[State Manager]
     end
 
-    subgraph "Agent Runtime"
+    subgraph "Agent Runtime Layer"
+        direction LR
         AGENT1[Explorer Agent]
         AGENT2[Optimizer Agent]
         AGENT3[Critic Agent]
@@ -76,32 +77,25 @@ graph TB
         CHECKPOINT[Checkpoints]
     end
 
+    %% Client to Gateway
     CLI --> FASTAPI
     API --> FASTAPI
     SDK --> FASTAPI
+
+    %% Gateway to Core
     FASTAPI --> SWARM
     SWARM --> SCHED
     SWARM --> STATE
-    SCHED --> AGENT1
-    SCHED --> AGENT2
-    SCHED --> AGENT3
-    SCHED --> AGENT4
-    SCHED --> AGENT5
-    AGENT1 --> GRAPH
-    AGENT2 --> GRAPH
-    AGENT3 --> GRAPH
-    AGENT4 --> GRAPH
-    AGENT5 --> GRAPH
-    AGENT1 --> SKILL
-    AGENT2 --> SKILL
-    AGENT3 --> SKILL
-    AGENT4 --> SKILL
-    AGENT5 --> SKILL
-    AGENT1 --> LLM
-    AGENT2 --> LLM
-    AGENT3 --> LLM
-    AGENT4 --> LLM
-    AGENT5 --> LLM
+
+    %% Core to Agents
+    SCHED --> AGENT1 & AGENT2 & AGENT3 & AGENT4 & AGENT5
+
+    %% Agents to Intelligence (Using shorthand grouping syntax)
+    AGENT1 & AGENT2 & AGENT3 & AGENT4 & AGENT5 --> GRAPH
+    AGENT1 & AGENT2 & AGENT3 & AGENT4 & AGENT5 --> SKILL
+    AGENT1 & AGENT2 & AGENT3 & AGENT4 & AGENT5 --> LLM
+
+    %% Core to Safety & Storage
     SWARM --> SAFE
     SAFE --> CIRCUIT
     SAFE --> ROLLBACK
@@ -109,6 +103,7 @@ graph TB
     STATE --> CHECKPOINT
     GRAPH --> REDIS
     SKILL --> REDIS
+
 ```
 
 ---
