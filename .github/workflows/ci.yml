@@ -13,8 +13,6 @@ jobs:
       - name: Configure git to prevent line ending conversion
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
-        with:
-          autocrlf: false
       - name: Normalize line endings
         run: |
           sudo apt-get update && sudo apt-get install -y dos2unix
@@ -50,8 +48,6 @@ jobs:
       - name: Configure git to prevent line ending conversion
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
-        with:
-          autocrlf: false
       - name: Normalize line endings
         run: |
           sudo apt-get update && sudo apt-get install -y dos2unix
