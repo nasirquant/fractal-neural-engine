@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GraphRAG** - Graph-based retrieval-augmented generation with NetworkX-backed knowledge graphs and vector similarity search
 - **SkillCompiler** - Recursive self-improving skill system with sandboxed dynamic code generation and test-driven compilation
 - **SafeguardSystem** - Enterprise-grade safety with circuit breakers, auto-rollback, divergence monitoring, and audit logging
-- **FastAPI REST API** - Async epoch management, real-time tick streaming, WebSocket support, OpenAPI docs
+- **FastAPI REST API** - Async epoch management, tick polling, OpenAPI docs
 - **Observability** - Prometheus metrics, Grafana dashboards, structured JSON logging, distributed tracing
 - **Docker Support** - docker-compose.yml for production deployment with Redis, Grafana, Prometheus
 - **CLI Interface** - `run_simulation.py` with configurable agents, ticks, roles, and objectives
