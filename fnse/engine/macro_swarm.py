@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime, timezone
+from datetime import datetime, timezone
 from threading import RLock
 from typing import Any, TypedDict
 
@@ -214,7 +214,7 @@ class MacroSwarm:
 
             agent.state.status = AgentStatus.IDLE
             agent.state.tick_count += 1
-            agent.state.updated_at = datetime.now(UTC)
+            agent.state.updated_at = datetime.now(timezone.utc)
 
             return {"agent_id": agent.agent_id, "contribution": 0.0}
 
@@ -278,7 +278,7 @@ class MacroSwarm:
             packet = SimulationTickPacket(
                 epoch_id=self.epoch_id,
                 tick_number=self.tick_number,
-                timestamp=datetime.now(UTC),
+                timestamp=datetime.now(timezone.utc),
                 agent_states={aid: an.state for aid, an in self.agents.items()},
                 message_queue=self.message_bus.copy(),
                 global_loss=global_loss,
@@ -528,7 +528,7 @@ class MacroSwarm:
 
     def get_epoch_result(self) -> EpochResult:
         """Get final epoch result."""
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         return EpochResult(
             epoch_id=self.epoch_id,
             started_at=self._start_time,

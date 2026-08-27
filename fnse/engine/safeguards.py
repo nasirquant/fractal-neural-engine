@@ -7,7 +7,7 @@ import logging
 from collections.abc import Callable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timezone
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from threading import RLock
@@ -59,7 +59,7 @@ class Checkpoint:
     checkpoint_id: str = field(default_factory=lambda: str(uuid4()))
     epoch_id: str = ""
     tick_number: int = 0
-    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     tick_packet: SimulationTickPacket | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     size_bytes: int = 0
@@ -97,7 +97,9 @@ class CircuitBreaker:
             if (
                 self._state == CircuitState.OPEN
                 and self._last_failure_time
-                and (datetime.now(UTC) - self._last_failure_time).total_seconds()
+                and (
+                    datetime.now(timezone.utc) - self._last_failure_time
+                ).total_seconds()
                 >= self.timeout_seconds
             ):
                 self._transition_to(CircuitState.HALF_OPEN)
@@ -130,7 +132,7 @@ class CircuitBreaker:
 
             self._failure_count += 1
             self._success_count = 0
-            self._last_failure_time = datetime.now(UTC)
+            self._last_failure_time = datetime.now(timezone.utc)
 
             if (
                 self._state == CircuitState.HALF_OPEN

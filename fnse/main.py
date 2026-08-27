@@ -9,7 +9,7 @@ import asyncio
 import logging
 import uuid
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
@@ -232,7 +232,7 @@ async def get_epoch_status(epoch_id: str) -> EpochStatusResponse:
         circuit_breakers=safeguard_status.get("circuit_breakers", {}),
         alerts_summary=safeguard_status.get("alerts", {}),
         checkpoints=safeguard_status.get("checkpoints", {}).get("total", 0),
-        uptime_seconds=(datetime.now(UTC) - swarm._start_time).total_seconds(),
+        uptime_seconds=(datetime.now(timezone.utc) - swarm._start_time).total_seconds(),
     )
 
 
@@ -274,7 +274,7 @@ async def step_epoch(epoch_id: str) -> TickResponse:
         convergence_rate=swarm._compute_convergence_rate(),
         agent_count=len(swarm.agents),
         alerts=alert_dicts,
-        timestamp=datetime.now(UTC).isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
 
