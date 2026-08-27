@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Integration script to run a complete FNSE simulation.
 
