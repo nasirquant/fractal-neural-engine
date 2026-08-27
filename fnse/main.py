@@ -174,6 +174,7 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
         for entity in request.seed_entities:
             graph_rag_manager.get_or_create(config.epoch_id).add_node(
                 GraphNode(
+                    node_id=str(uuid.uuid4()),
                     node_type=entity.get("type", "entity"),
                     label=entity.get("label", ""),
                     properties=entity.get("properties", {}),
@@ -474,6 +475,7 @@ async def seed_graph(epoch_id: str, request: GraphSeedRequest) -> dict[str, Any]
     for entity in request.entities:
         graph.add_node(
             GraphNode(
+                node_id=str(uuid.uuid4()),
                 node_type=entity.get("type", "entity"),
                 label=entity.get("label", ""),
                 properties=entity.get("properties", {}),
