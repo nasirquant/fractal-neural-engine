@@ -20,7 +20,7 @@ from fnse.engine.graph_rag import graph_rag_manager
 from fnse.engine.macro_swarm import SwarmConfig, swarm_manager
 from fnse.engine.safeguards import AlertSeverity, SafeguardSystem
 from fnse.engine.skill_compiler import skill_registry
-from fnse.engine.state import AgentRole
+from fnse.engine.state import AgentRole, GraphNode
 
 logging.basicConfig(level=getattr(logging, settings.log_level))
 logger = logging.getLogger(__name__)
@@ -173,9 +173,11 @@ async def create_epoch(request: CreateEpochRequest) -> CreateEpochResponse:
     if request.seed_entities:
         for entity in request.seed_entities:
             graph_rag_manager.get_or_create(config.epoch_id).add_node(
-                node_type=entity.get("type", "entity"),
-                label=entity.get("label", ""),
-                properties=entity.get("properties", {}),
+                GraphNode(
+                    node_type=entity.get("type", "entity"),
+                    label=entity.get("label", ""),
+                    properties=entity.get("properties", {}),
+                )
             )
 
     if request.model:
@@ -246,7 +248,7 @@ async def step_epoch(epoch_id: str) -> TickResponse:
 
     safeguard = _epoch_safeguards.get(epoch_id)
 
-    tick_packet = swarm.execute_tick()
+    tick_packet = swarm.tick()
 
     alerts = []
     if safeguard:
@@ -291,7 +293,7 @@ async def run_epoch(epoch_id: str, background_tasks: BackgroundTasks) -> dict[st
         safeguard = _epoch_safeguards.get(epoch_id)
         try:
             while swarm.tick_number < swarm.config.max_ticks and swarm._running:
-                tick_packet = swarm.execute_tick()
+                tick_packet = swarm.tick()
 
                 if safeguard:
                     alerts = safeguard.on_tick_end(tick_packet)
@@ -471,9 +473,11 @@ async def seed_graph(epoch_id: str, request: GraphSeedRequest) -> dict[str, Any]
 
     for entity in request.entities:
         graph.add_node(
-            node_type=entity.get("type", "entity"),
-            label=entity.get("label", ""),
-            properties=entity.get("properties", {}),
+            GraphNode(
+                node_type=entity.get("type", "entity"),
+                label=entity.get("label", ""),
+                properties=entity.get("properties", {}),
+            )
         )
 
     return {"status": "seeded", "nodes_added": len(request.entities)}

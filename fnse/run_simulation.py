@@ -115,7 +115,7 @@ class SimulationRunner:
         packet = self.swarm.tick()
 
         # Check safeguards
-        alerts = self.safeguard.on_tick_end(packet)
+        alerts = self.safeguard.on_tick_end(packet) if self.safeguard else []
 
         # Log critical alerts
         for alert in alerts:
@@ -224,7 +224,7 @@ class SimulationRunner:
         result = self.swarm.get_epoch_result()
 
         # Agent statistics
-        agent_stats = {}
+        agent_stats: dict[str, dict[str, int | float | str]] = {}
         for agent_id, agent_node in self.swarm.agents.items():
             state = agent_node.state
             agent_stats[agent_id] = {
@@ -240,7 +240,7 @@ class SimulationRunner:
         # Top performers
         top_performers = sorted(
             agent_stats.items(),
-            key=lambda x: x[1]["successes"] - x[1]["failures"],
+            key=lambda x: int(x[1]["successes"]) - int(x[1]["failures"]),
             reverse=True,
         )[:5]
         return {
