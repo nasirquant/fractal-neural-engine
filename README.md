@@ -1,9 +1,9 @@
 # 🧠 Fractal Neural Simulation Engine (FNSE)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.0.2-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/license-AGPL--3.0-orange.svg" alt="License">
-  <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/fastapi-0.109+-green.svg" alt="FastAPI">
   <img src="https://img.shields.io/badge/redis-7.0+-red.svg" alt="Redis">
   <img src="https://img.shields.io/badge/docker-ready-blue.svg" alt="Docker">
