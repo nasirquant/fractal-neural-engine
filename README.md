@@ -35,6 +35,80 @@
 ## 🏗️ Architecture Overview
 
 ```mermaid
+graph TB
+    subgraph "Client Layer"
+        CLI[CLI Interface]
+        API[REST API]
+        SDK[Python SDK]
+    end
+
+    subgraph "API Gateway"
+        FASTAPI[FastAPI Server]
+        WS[WebSocket]
+        AUTH[Auth Middleware]
+    end
+
+    subgraph "Core Engine"
+        SWARM[MacroSwarm Orchestrator]
+        SCHED[Tick Scheduler]
+        STATE[State Manager]
+    end
+
+    subgraph "Agent Runtime"
+        AGENT1[Explorer Agent]
+        AGENT2[Optimizer Agent]
+        AGENT3[Critic Agent]
+        AGENT4[Synthesizer Agent]
+        AGENT5[Coordinator Agent]
+    end
+
+    subgraph "Intelligence Layer"
+        GRAPH[GraphRAG Memory]
+        SKILL[Skill Compiler]
+        LLM[LiteLLM Router]
+    end
+
+    subgraph "Safety & Persistence"
+        SAFE[Safeguard System]
+        CIRCUIT[Circuit Breakers]
+        ROLLBACK[Auto Rollback]
+        REDIS[(Redis Cache)]
+        CHECKPOINT[Checkpoints]
+    end
+
+    CLI --> FASTAPI
+    API --> FASTAPI
+    SDK --> FASTAPI
+    FASTAPI --> SWARM
+    SWARM --> SCHED
+    SWARM --> STATE
+    SCHED --> AGENT1
+    SCHED --> AGENT2
+    SCHED --> AGENT3
+    SCHED --> AGENT4
+    SCHED --> AGENT5
+    AGENT1 --> GRAPH
+    AGENT2 --> GRAPH
+    AGENT3 --> GRAPH
+    AGENT4 --> GRAPH
+    AGENT5 --> GRAPH
+    AGENT1 --> SKILL
+    AGENT2 --> SKILL
+    AGENT3 --> SKILL
+    AGENT4 --> SKILL
+    AGENT5 --> SKILL
+    AGENT1 --> LLM
+    AGENT2 --> LLM
+    AGENT3 --> LLM
+    AGENT4 --> LLM
+    AGENT5 --> LLM
+    SWARM --> SAFE
+    SAFE --> CIRCUIT
+    SAFE --> ROLLBACK
+    STATE --> REDIS
+    STATE --> CHECKPOINT
+    GRAPH --> REDIS
+    SKILL --> REDIS
 ```
 
 ---
@@ -47,7 +121,7 @@
 | 🧠 **GraphRAG** | Graph-based retrieval-augmented generation | Vector similarity search, knowledge graph traversal, entity linking, episodic memory, semantic clustering |
 | ⚙️ **SkillCompiler** | Recursive self-improving skill system | Dynamic code generation, sandboxed execution, test-driven compilation, skill versioning, dependency tracking |
 | 🛡️ **SafeguardSystem** | Enterprise-grade safety & observability | Circuit breakers, automatic rollbacks, divergence detection, alert management, checkpoint recovery |
-| 🌐 **REST API** | Production-ready FastAPI interface | Async epoch management, tick polling, OpenAPI docs, health checks |
+| 🌐 **REST API** | Production-ready FastAPI interface | Async epoch management, real-time tick streaming, WebSocket support, OpenAPI docs, health checks |
 
 ---
 
@@ -194,7 +268,7 @@ curl -X POST http://localhost:8000/epochs \
 # Start simulation
 curl -X POST http://localhost:8000/epochs/{epoch_id}/start
 
-# Monitor progress (poll)
+# Monitor progress (poll or WebSocket)
 curl http://localhost:8000/epochs/{epoch_id}
 
 # Get final results
